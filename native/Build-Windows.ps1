@@ -6,36 +6,12 @@ $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 $root = Split-Path -Parent $PSScriptRoot
 $artifacts = Join-Path $root artifacts
-$downloads = Join-Path $artifacts downloads
-$sources = Join-Path $artifacts native-source
 $builds = Join-Path $artifacts native-build
 $prefix = Join-Path $artifacts native-dependencies
 $output = Join-Path $artifacts native/win-x64
-New-Item -ItemType Directory -Force $downloads, $sources, $builds, $prefix, $output | Out-Null
+New-Item -ItemType Directory -Force $builds, $prefix, $output | Out-Null
 
-$dependencies = @(
-    @{ Name = 'libarchive-3.8.11'; Url = 'https://codeload.github.com/libarchive/libarchive/tar.gz/refs/tags/v3.8.11'; Sha256 = '6E9560B2E0659FF688C5EFB7717A68BB06B28EF65A69ADDCD6C424EAF9C319B1' }
-    @{ Name = 'zlib-1.3.2'; Url = 'https://codeload.github.com/madler/zlib/tar.gz/refs/tags/v1.3.2'; Sha256 = 'B99A0B86C0BA9360EC7E78C4F1E43B1CBDF1E6936C8FA0F6835C0CD694A495A1' }
-    @{ Name = 'bzip2-1.0.8'; Url = 'https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz'; Sha256 = 'AB5A03176EE106D3F0FA90E381DA478DDAE405918153CCA248E682CD0C4A2269' }
-    @{ Name = 'xz-5.8.3'; Url = 'https://codeload.github.com/tukaani-project/xz/tar.gz/refs/tags/v5.8.3'; Sha256 = '8EC1767FA517642ECB4CF08B891CE667BA6F143551E382B07C7EF437BDA335E2' }
-    @{ Name = 'zstd-1.5.7'; Url = 'https://codeload.github.com/facebook/zstd/tar.gz/refs/tags/v1.5.7'; Sha256 = '37D7284556B20954E56E1CA85B80226768902E2EDABD3B649E9E72C0C9012EE3' }
-)
-
-foreach ($dependency in $dependencies) {
-    $file = Join-Path $downloads "$($dependency.Name).tar.gz"
-    if (!(Test-Path -LiteralPath $file)) {
-        $partial = "$file.partial"
-        curl.exe --fail --silent --show-error --location --retry 2 --output $partial $dependency.Url
-        if ((Get-FileHash -LiteralPath $partial -Algorithm SHA256).Hash -ne $dependency.Sha256) {
-            throw "SHA-256 mismatch for $($dependency.Name)."
-        }
-        Move-Item -LiteralPath $partial -Destination $file
-    }
-    if ((Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash -ne $dependency.Sha256) {
-        throw "SHA-256 mismatch for $file."
-    }
-    tar.exe -xf $file -C $sources
-}
+$sources = & (Join-Path $PSScriptRoot Prepare-Sources.ps1) -Artifacts $artifacts
 
 function Configure-Native([string] $Name, [string] $Source, [string[]] $Options) {
     $build = Join-Path $builds $Name
@@ -59,25 +35,7 @@ Install-Native xz (Join-Path $sources xz-5.8.3) @(
 Install-Native zstd (Join-Path $sources zstd-1.5.7/build/cmake) @(
     '-DZSTD_BUILD_SHARED=OFF', '-DZSTD_BUILD_PROGRAMS=OFF', '-DZSTD_BUILD_TESTS=OFF')
 
-function Remove-SourceText([string] $File, [string] $Pattern) {
-    $sourceText = [IO.File]::ReadAllText($File)
-    $match = [regex]::Match($sourceText, $Pattern)
-    if (!$match.Success) { throw "Expected source in $File was not found: $Pattern" }
-    [IO.File]::WriteAllText($File, $sourceText.Remove($match.Index, $match.Length))
-}
-
 $archive = Join-Path $sources libarchive-3.8.11
-$libarchive = Join-Path $archive libarchive
-$cmakeFile = Join-Path $libarchive CMakeLists.txt
-Remove-SourceText $cmakeFile '(?m)^  archive_read_support_format_rar\.c\r?\n  archive_read_support_format_rar5\.c\r?\n'
-# The BLAKE2 reference implementation is only used by the RAR5 reader.
-Remove-SourceText $cmakeFile '(?ms)^IF\(ARCHIVE_BLAKE2\).*?^ENDIF\(ARCHIVE_BLAKE2\)\r?\n'
-Remove-SourceText (Join-Path $libarchive archive_read_support_format_all.c) `
-    '(?m)^\tarchive_read_support_format_rar\(a\);\r?\n\tarchive_read_support_format_rar5\(a\);\r?\n'
-Remove-SourceText (Join-Path $libarchive archive_read_support_format_by_code.c) `
-    '(?m)^\tcase ARCHIVE_FORMAT_RAR:\r?\n\t\treturn archive_read_support_format_rar\(a\);\r?\n\tcase ARCHIVE_FORMAT_RAR_V5:\r?\n\t\treturn archive_read_support_format_rar5\(a\);\r?\n'
-
-Add-Content -LiteralPath $cmakeFile -Value 'set_target_properties(archive PROPERTIES OUTPUT_NAME "arcdini-libarchive")'
 Configure-Native libarchive $archive @(
     "-DCMAKE_PREFIX_PATH=$prefix", '-DBUILD_SHARED_LIBS=ON', '-DMSVC_USE_STATIC_CRT=ON',
     "-DZLIB_INCLUDE_DIR=$prefix/include", "-DZLIB_LIBRARY_RELEASE=$prefix/lib/zs.lib",

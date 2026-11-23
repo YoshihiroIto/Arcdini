@@ -15,7 +15,7 @@ public sealed partial class ArchiveFile
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
         ValidateCreation(entries, options, cancellationToken);
-        var output = Path.GetFullPath(path);
+        var output = ArchivePaths.GetFullPath(path);
         ArchivePaths.CheckDestination(output, overwrite, path);
         var temporary = ArchivePaths.CreateTemporaryFile(Path.GetDirectoryName(output)!);
         var temporaryPath = temporary.Name;

@@ -1,6 +1,6 @@
 # Arcdini
 
-libarchive を使って圧縮アーカイブを扱う .NET ライブラリです。Windows x64 が対象で、.NET 8 以降のアプリから利用できます。NuGet パッケージに専用のネイティブ DLL を同梱します。
+libarchive を使って圧縮アーカイブを扱う .NET ライブラリです。.NET 8 以降のアプリから利用できます。NuGet パッケージに Windows x64 用 DLL を同梱します。ソースから組み込むアプリ向けに macOS arm64 と x64 の dylib もビルドできます。
 
 ## 対応形式
 
@@ -8,7 +8,7 @@ libarchive を使って圧縮アーカイブを扱う .NET ライブラリです
 | --- | --- | --- |
 | ZIP | 通常の ZIP、ZipCrypto、WinZip AES | 通常の ZIP、WinZip AES-256 |
 | 7z | 暗号化されていない 7z | 暗号化されていない 7z |
-| TAR | 非圧縮、gzip、bzip2、xz、Zstandard | 非圧縮、gzip、bzip2、xz、Zstandard |
+| TAR | 非圧縮、gzip、bzip2、lzip、xz、Zstandard | 非圧縮、gzip、bzip2、lzip、xz、Zstandard |
 
 扱える ZIP 圧縮方式は libarchive に準拠します。Deflate64、Shrink、Reduce、Implode は対象外です。RAR・RAR5 のデコーダーはネイティブ DLL のコンパイル対象から除外しています。一覧のサイズは展開後の値です。
 
@@ -43,6 +43,7 @@ archive.ExtractEntries([report.Id], "output", cancellationToken: cancellationTok
 - `OpenEntry` が返すストリームは前方読み取り専用です。同じ `ArchiveFile` で次の操作を始める前に、そのストリームを破棄してください。並行して読む場合は、別々の `ArchiveFile` と入力を使えます。
 - 読み取りパスワードは `ArchiveReadOptions.Password`、ZIP の作成パスワードは `ArchiveCreationOptions.Password` に渡します。作成・展開の進捗は `IProgress<ArchiveProgress>` で受け取れます。書庫処理のエラーは `ArchiveException.Error` で判別できます。
 - 展開先では通常ファイルとディレクトリを作成し、書庫内のリンクや既存のリパースポイントを拒否します。既存ファイルの置き換えはオプションで有効にできます。処理中の一時ファイルは失敗・キャンセル時に削除し、すでに展開を終えたファイルは残ります。展開中は別のプロセスから展開先のディレクトリ構成を変更しないでください。
+- `RestoreSymbolicLinks` を有効にすると、展開先に収まる相対パスを指すシンボリックリンクを復元できます。ZIP・TAR の作成時にリンクを収録するには `ArchiveEntrySource.SymbolicLink` を使います。
 - ファイルへの書庫作成は完了後に書庫を配置します。出力ストリームに直接作成した場合は、失敗時に書き込み済みのデータが残ることがあります。
 
 ## ビルドと検証
@@ -67,3 +68,5 @@ dotnet publish tests/Arcdini.Smoke -c Release -r win-x64 -p:PublishAot=true -o a
 ビルドスクリプトは SHA-256 を固定した libarchive 3.8.11、zlib 1.3.2、bzip2 1.0.8、liblzma 5.8.3、Zstandard 1.5.7 のソースを取得します。圧縮ライブラリは静的にリンクし、ZIP の暗号処理には Windows CNG を使います。
 
 NuGet を参照したアプリのビルド・発行先には `Arcdini/LICENSE` と `Arcdini/THIRD-PARTY-NOTICES.txt` がコピーされます。ZIP やインストーラーを組み立てる際にも、そのファイルを配布物に含めてください。
+
+macOS で dylib を生成するには、PowerShell 7、CMake、Xcode Command Line Tools を用意し、`./native/Build-macOS.ps1 -Architecture arm64` または `-Architecture x86_64` を実行します。アプリには `artifacts/native/osx-*/libarcdini-libarchive.dylib` と同ディレクトリの通知文、Arcdini のライセンスを同梱してください。

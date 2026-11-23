@@ -9,6 +9,25 @@ internal static class ArchivePaths
         => path.Split(Separators, StringSplitOptions.RemoveEmptyEntries)
             .Where(component => component != ".").ToArray();
 
+    internal static string GetFullPath(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        if (!OperatingSystem.IsMacOS())
+            return fullPath;
+
+        // macOS exposes system directories such as TMPDIR through these root-level aliases.
+        var end = fullPath.IndexOf('/', 1);
+        var component = end < 0 ? fullPath : fullPath[..end];
+        if (component is "/tmp" or "/var" or "/etc")
+        {
+            var target = new DirectoryInfo(component).LinkTarget;
+            if (target == "private" + component || target == "/private" + component)
+                return "/private" + fullPath;
+        }
+
+        return fullPath;
+    }
+
     internal static string[] ValidateEntryPath(string path)
     {
         var components = Split(path);
@@ -24,7 +43,8 @@ internal static class ArchivePaths
         return components;
     }
 
-    internal static void EnsureDirectory(string path, string entryPath)
+    internal static void EnsureDirectory(
+        string path, string entryPath, List<(string Path, bool IsDirectory)>? created = null)
     {
         var root = Path.GetPathRoot(path)!;
         foreach (var part in path[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
@@ -32,7 +52,10 @@ internal static class ArchivePaths
             root = Path.Join(root, part);
             var attributes = RejectReparsePoint(root, entryPath);
             if (attributes is null)
+            {
                 Directory.CreateDirectory(root);
+                created?.Add((root, true));
+            }
             else if ((attributes.Value & FileAttributes.Directory) == 0)
                 throw Exists(root, entryPath);
         }
@@ -67,11 +90,12 @@ internal static class ArchivePaths
         return new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 64 * 1024, options);
     }
 
-    internal static void CheckDestination(string destination, bool overwrite, string entryPath)
+    internal static bool CheckDestination(string destination, bool overwrite, string entryPath)
     {
         var attributes = RejectReparsePoint(destination, entryPath);
         if (attributes is { } existing && (!overwrite || (existing & FileAttributes.Directory) != 0))
             throw Exists(destination, entryPath);
+        return attributes.HasValue;
     }
 
     internal static void MoveIntoPlace(string temporaryPath, string destination, bool overwrite, string entryPath)

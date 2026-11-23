@@ -7,7 +7,7 @@ public sealed class ArchiveEntrySource
     private readonly Func<Stream>? _openStream;
 
     private ArchiveEntrySource(string path, long size, DateTimeOffset? lastWriteTime,
-        string? filePath = null, Func<Stream>? openStream = null)
+        string? filePath = null, Func<Stream>? openStream = null, string? linkTarget = null)
     {
         var components = ArchivePaths.ValidateEntryPath(path);
         if (components.Length == 0)
@@ -17,12 +17,14 @@ public sealed class ArchiveEntrySource
         LastWriteTime = lastWriteTime;
         _filePath = filePath;
         _openStream = openStream;
+        LinkTarget = linkTarget;
     }
 
     public string Path { get; }
     internal long Size { get; }
     internal DateTimeOffset? LastWriteTime { get; }
-    internal bool IsDirectory => _filePath is null && _openStream is null;
+    internal string? LinkTarget { get; }
+    internal bool IsDirectory => _filePath is null && _openStream is null && LinkTarget is null;
 
     public static ArchiveEntrySource FromFile(string filePath, string? entryPath = null)
     {
@@ -45,6 +47,16 @@ public sealed class ArchiveEntrySource
     {
         ArgumentException.ThrowIfNullOrEmpty(entryPath);
         return new ArchiveEntrySource(entryPath, 0, lastWriteTime);
+    }
+
+    public static ArchiveEntrySource SymbolicLink(
+        string entryPath, string linkTarget, DateTimeOffset? lastWriteTime = null)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(entryPath);
+        ArgumentException.ThrowIfNullOrEmpty(linkTarget);
+        if (linkTarget.Contains('\0'))
+            throw new ArgumentException("A symbolic link target cannot contain NUL.", nameof(linkTarget));
+        return new ArchiveEntrySource(entryPath, 0, lastWriteTime, linkTarget: linkTarget);
     }
 
     internal Stream? OpenContent()

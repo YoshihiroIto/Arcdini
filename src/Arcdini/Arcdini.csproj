@@ -1,10 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="PublishAot;PublishSelfContained;SelfContained;RuntimeIdentifier">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible>true</IsAotCompatible>
+    <!-- NativeAOT compilation belongs to the consuming application. -->
+    <PublishAot>false</PublishAot>
+    <PublishSelfContained>false</PublishSelfContained>
+    <SelfContained>false</SelfContained>
+    <RuntimeIdentifier></RuntimeIdentifier>
     <VersionPrefix>0.1.0</VersionPrefix>
     <Authors>Yoshihiro Ito</Authors>
     <Description>A .NET archive library backed by libarchive for Windows x64.</Description>

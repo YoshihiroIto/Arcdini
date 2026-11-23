@@ -44,7 +44,11 @@ internal class NativeStatus(CancellationToken cancellationToken)
 
     internal static void CheckPlatform()
     {
-        if (!OperatingSystem.IsWindows() || RuntimeInformation.ProcessArchitecture != Architecture.X64)
-            throw new PlatformNotSupportedException("Arcdini requires Windows x64.");
+        var architecture = RuntimeInformation.ProcessArchitecture;
+        if ((OperatingSystem.IsWindows() && architecture == Architecture.X64) ||
+            (OperatingSystem.IsMacOS() && architecture is Architecture.X64 or Architecture.Arm64))
+            return;
+
+        throw new PlatformNotSupportedException("Arcdini requires Windows x64 or macOS (x64 or arm64).");
     }
 }

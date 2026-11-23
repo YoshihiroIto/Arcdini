@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $notice = [Text.StringBuilder]::new()
-[void] $notice.AppendLine('Third-party notices for the Arcdini Windows x64 native library')
+[void] $notice.AppendLine('Third-party notices for the Arcdini native library')
 
 function Add-License([string] $Name, [string] $File) {
     [void] $notice.AppendLine().AppendLine($Name).AppendLine(('=' * $Name.Length))

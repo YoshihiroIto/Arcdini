@@ -17,6 +17,7 @@ internal sealed unsafe class NativeWriter : IDisposable
     internal NativeWriter(Stream destination, ArchiveCreationOptions options, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var locale = MacUtf8Locale.Enter();
         _output = new Output(destination, cancellationToken);
         _handle = new WriteHandle();
         try
@@ -34,6 +35,7 @@ internal sealed unsafe class NativeWriter : IDisposable
                 ArchiveFormat.TarGzip => Native.WriteGzip(_handle),
                 ArchiveFormat.TarBzip2 => Native.WriteBzip2(_handle),
                 ArchiveFormat.TarXz => Native.WriteXz(_handle),
+                ArchiveFormat.TarLzip => Native.WriteLzip(_handle),
                 ArchiveFormat.TarZstandard => Native.WriteZstd(_handle),
                 _ => Native.Ok
             };
@@ -60,16 +62,28 @@ internal sealed unsafe class NativeWriter : IDisposable
 
     internal void WriteHeader(ArchiveEntrySource source, long size, DateTimeOffset? lastWriteTime)
     {
+        using var locale = MacUtf8Locale.Enter();
         using var entry = new EntryHandle();
         var path = source.IsDirectory ? source.Path + "/" : source.Path;
-        Native.EntrySetPath(entry, path);
+        if (OperatingSystem.IsWindows())
+            Native.EntrySetPathWide(entry, path);
+        else
+            Native.EntrySetPathUtf8(entry, path);
         Native.EntrySetSize(entry, size);
-        Native.EntrySetMode(entry, source.IsDirectory ? (ushort)0x41ED : (ushort)0x81A4);
+        Native.EntrySetMode(entry, source.IsDirectory ? (ushort)0x41ED :
+            source.LinkTarget is null ? (ushort)0x81A4 : (ushort)0xA1FF);
+        if (source.LinkTarget is { } linkTarget)
+        {
+            if (OperatingSystem.IsWindows())
+                Native.EntrySetSymlinkWide(entry, linkTarget);
+            else
+                Native.EntrySetSymlinkUtf8(entry, linkTarget);
+        }
         if (lastWriteTime is { } time)
         {
             var seconds = time.ToUnixTimeSeconds();
             var fraction = time.UtcTicks - DateTimeOffset.FromUnixTimeSeconds(seconds).UtcTicks;
-            Native.EntrySetMTime(entry, seconds, checked((int)(fraction * 100)));
+            Native.EntrySetMTime(entry, seconds, new CLong(checked((int)(fraction * 100))));
         }
         Check(Native.WriteHeader(_handle, entry), "Write archive entry header", source.Path);
     }
@@ -91,6 +105,7 @@ internal sealed unsafe class NativeWriter : IDisposable
 
     internal void Complete()
     {
+        using var locale = MacUtf8Locale.Enter();
         Check(Native.WriteClose(_handle), "Finish archive");
         _closed = true;
     }

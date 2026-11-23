@@ -8,7 +8,8 @@ public enum ArchiveFormat
     TarGzip,
     TarBzip2,
     TarXz,
-    TarZstandard
+    TarZstandard,
+    TarLzip
 }
 
 public sealed class ArchiveReadOptions
@@ -20,6 +21,9 @@ public sealed class ArchiveExtractionOptions
 {
     public bool OverwriteExistingFiles { get; init; }
     public bool PreserveLastWriteTime { get; init; } = true;
+    public bool PreserveCreationAndAccessTimes { get; init; }
+    public bool RestoreSymbolicLinks { get; init; }
+    public bool RemoveNewEntriesOnCancellation { get; init; }
 }
 
 public sealed class ArchiveCreationOptions(ArchiveFormat format)

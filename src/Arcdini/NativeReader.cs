@@ -16,11 +16,14 @@ internal sealed unsafe class NativeReader : IDisposable
     private readonly ReadHandle _handle;
     private readonly Input _input;
     private long _nextId;
+    private nint _entry;
     internal ArchiveEntry? Current { get; private set; }
+    internal string? LinkTarget { get; private set; }
 
     internal NativeReader(Stream source, long origin, string? password, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        using var locale = MacUtf8Locale.Enter();
         _input = new Input(source, origin, cancellationToken);
         _handle = new ReadHandle();
         try
@@ -31,6 +34,7 @@ internal sealed unsafe class NativeReader : IDisposable
             Check(Native.ReadGzip(_handle), "Enable gzip");
             Check(Native.ReadBzip2(_handle), "Enable bzip2");
             Check(Native.ReadXz(_handle), "Enable xz");
+            Check(Native.ReadLzip(_handle), "Enable lzip");
             Check(Native.ReadZstd(_handle), "Enable Zstandard");
             if (password is not null)
                 Check(Native.ReadAddPassphrase(_handle, password), "Set passphrase");
@@ -47,14 +51,17 @@ internal sealed unsafe class NativeReader : IDisposable
     internal bool MoveNext()
     {
         _input.CancellationToken.ThrowIfCancellationRequested();
+        using var locale = MacUtf8Locale.Enter();
         Current = null;
-        var status = Native.ReadNextHeader(_handle, out var entry);
+        var status = Native.ReadNextHeader(_handle, out _entry);
         Check(status, "Read entry header");
         if (status == Native.End)
             return false;
 
-        var path = Marshal.PtrToStringUni(Native.EntryPathWide(entry)) ??
-                   Marshal.PtrToStringUTF8(Native.EntryPathUtf8(entry));
+        var entry = _entry;
+        var path = OperatingSystem.IsWindows()
+            ? Marshal.PtrToStringUni(Native.EntryPathWide(entry)) ?? Marshal.PtrToStringUTF8(Native.EntryPathUtf8(entry))
+            : Marshal.PtrToStringUTF8(Native.EntryPathUtf8(entry));
         if (string.IsNullOrEmpty(path))
             throw new ArchiveException(ArchiveError.InvalidArchive, "Could not decode the entry path.");
 
@@ -67,6 +74,21 @@ internal sealed unsafe class NativeReader : IDisposable
             _ => ArchiveEntryKind.Other
         };
         long? size = Native.EntryHasSize(entry) != 0 ? Native.EntrySize(entry) : null;
+        if (kind == ArchiveEntryKind.File && size == 0 &&
+            (Native.ReadFormat(_handle) & Native.FormatFamilyMask) == Native.TarFormatFamily)
+        {
+            var directoryPath = path.TrimEnd();
+            if (directoryPath.EndsWith('/') || directoryPath.EndsWith('\\'))
+            {
+                path = directoryPath.TrimEnd('/', '\\').TrimEnd() + "/";
+                kind = ArchiveEntryKind.Directory;
+            }
+        }
+        LinkTarget = kind == ArchiveEntryKind.SymbolicLink
+            ? OperatingSystem.IsWindows()
+                ? Marshal.PtrToStringUni(Native.EntrySymlinkWide(entry)) ?? Marshal.PtrToStringUTF8(Native.EntrySymlinkUtf8(entry))
+                : Marshal.PtrToStringUTF8(Native.EntrySymlinkUtf8(entry))
+            : null;
         Current = new ArchiveEntry(_nextId++, path, kind, size, GetLastWriteTime(entry), Native.EntryEncrypted(entry) != 0);
         return true;
     }
@@ -97,13 +119,20 @@ internal sealed unsafe class NativeReader : IDisposable
         => _input.Check(_handle, status, operation, ArchiveError.InvalidArchive, Current?.Path);
 
     private static DateTimeOffset? GetLastWriteTime(nint entry)
+        => Native.EntryHasMTime(entry) == 0 ? null :
+            ReadTime(Native.EntryMTime(entry), Native.EntryMTimeNanoseconds(entry));
+
+    internal (DateTimeOffset? Created, DateTimeOffset? Accessed) GetCreationAndAccessTimes()
+        => (Native.EntryHasBirthTime(_entry) == 0 ? null :
+                ReadTime(Native.EntryBirthTime(_entry), Native.EntryBirthTimeNanoseconds(_entry)),
+            Native.EntryHasATime(_entry) == 0 ? null :
+                ReadTime(Native.EntryATime(_entry), Native.EntryATimeNanoseconds(_entry)));
+
+    private static DateTimeOffset? ReadTime(long seconds, CLong nanoseconds)
     {
-        if (Native.EntryHasMTime(entry) == 0)
-            return null;
         try
         {
-            return DateTimeOffset.FromUnixTimeSeconds(Native.EntryMTime(entry))
-                .AddTicks(Native.EntryMTimeNanoseconds(entry) / 100);
+            return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds.Value / 100);
         }
         catch (ArgumentOutOfRangeException)
         {

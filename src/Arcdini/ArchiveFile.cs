@@ -91,10 +91,36 @@ public sealed partial class ArchiveFile : IDisposable
         }
     }
 
+    /// <summary>Enumerates entry metadata in archive order and releases the reader when enumeration ends.</summary>
+    public IEnumerable<ArchiveEntry> EnumerateEntries(CancellationToken cancellationToken = default)
+    {
+        Acquire(cancellationToken);
+        try
+        {
+            using var reader = NewReader(cancellationToken);
+            while (reader.MoveNext())
+            {
+                yield return reader.Current!;
+                reader.Skip();
+            }
+        }
+        finally
+        {
+            Release();
+        }
+    }
+
     /// <summary>Opens a forward-only stream. Dispose it before another operation on this archive.</summary>
     public Stream OpenEntry(long entryId, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(entryId);
+        return OpenEntry(entry => entry.Id == entryId, cancellationToken) ?? throw EntryNotFound(entryId);
+    }
+
+    /// <summary>Opens the first matching entry, or returns null when none matches.</summary>
+    public Stream? OpenEntry(Func<ArchiveEntry, bool> matches, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(matches);
         Acquire(cancellationToken);
         NativeReader? reader = null;
         try
@@ -103,7 +129,7 @@ public sealed partial class ArchiveFile : IDisposable
             while (reader.MoveNext())
             {
                 var entry = reader.Current!;
-                if (entry.Id == entryId)
+                if (matches(entry))
                 {
                     if (entry.Kind != ArchiveEntryKind.File)
                         throw new ArchiveException(ArchiveError.UnsupportedFeature, "Only regular files have readable data.", entry.Path);
@@ -111,7 +137,9 @@ public sealed partial class ArchiveFile : IDisposable
                 }
                 reader.Skip();
             }
-            throw EntryNotFound(entryId);
+            reader.Dispose();
+            Release();
+            return null;
         }
         catch
         {

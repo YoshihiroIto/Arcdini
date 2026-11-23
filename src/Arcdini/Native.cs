@@ -7,11 +7,13 @@ namespace Arcdini;
 
 internal static unsafe partial class Native
 {
-    private const string Library = "arcdini-libarchive.dll";
+    private const string Library = "arcdini-libarchive";
 
     internal const int Ok = 0;
     internal const int End = 1;
     internal const int Fatal = -30;
+    internal const int FormatFamilyMask = 0xFF0000;
+    internal const int TarFormatFamily = 0x030000;
     internal const ushort RegularFile = 0x8000;
     internal const ushort Directory = 0x4000;
     internal const ushort SymbolicLink = 0xA000;
@@ -48,6 +50,10 @@ internal static unsafe partial class Native
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial int ReadXz(ReadHandle archive);
 
+    [LibraryImport(Library, EntryPoint = "archive_read_support_filter_lzip")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial int ReadLzip(ReadHandle archive);
+
     [LibraryImport(Library, EntryPoint = "archive_read_support_filter_zstd")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial int ReadZstd(ReadHandle archive);
@@ -65,6 +71,10 @@ internal static unsafe partial class Native
     [LibraryImport(Library, EntryPoint = "archive_read_next_header")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial int ReadNextHeader(ReadHandle archive, out nint entry);
+
+    [LibraryImport(Library, EntryPoint = "archive_format")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial int ReadFormat(ReadHandle archive);
 
     [LibraryImport(Library, EntryPoint = "archive_read_data_skip")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
@@ -118,6 +128,10 @@ internal static unsafe partial class Native
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial int WriteXz(WriteHandle archive);
 
+    [LibraryImport(Library, EntryPoint = "archive_write_add_filter_lzip")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial int WriteLzip(WriteHandle archive);
+
     [LibraryImport(Library, EntryPoint = "archive_write_add_filter_zstd")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial int WriteZstd(WriteHandle archive);
@@ -163,6 +177,14 @@ internal static unsafe partial class Native
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial nint EntryPathWide(nint entry);
 
+    [LibraryImport(Library, EntryPoint = "archive_entry_symlink_w")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial nint EntrySymlinkWide(nint entry);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_symlink_utf8")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial nint EntrySymlinkUtf8(nint entry);
+
     [LibraryImport(Library, EntryPoint = "archive_entry_pathname_utf8")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial nint EntryPathUtf8(nint entry);
@@ -189,11 +211,35 @@ internal static unsafe partial class Native
 
     [LibraryImport(Library, EntryPoint = "archive_entry_mtime_nsec")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial int EntryMTimeNanoseconds(nint entry);
+    internal static partial CLong EntryMTimeNanoseconds(nint entry);
 
     [LibraryImport(Library, EntryPoint = "archive_entry_mtime_is_set")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
     internal static partial int EntryHasMTime(nint entry);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_birthtime_is_set")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial int EntryHasBirthTime(nint entry);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_birthtime")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial long EntryBirthTime(nint entry);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_birthtime_nsec")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial CLong EntryBirthTimeNanoseconds(nint entry);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_atime_is_set")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial int EntryHasATime(nint entry);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_atime")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial long EntryATime(nint entry);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_atime_nsec")]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial CLong EntryATimeNanoseconds(nint entry);
 
     [LibraryImport(Library, EntryPoint = "archive_entry_is_encrypted")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
@@ -201,7 +247,19 @@ internal static unsafe partial class Native
 
     [LibraryImport(Library, EntryPoint = "archive_entry_copy_pathname_w", StringMarshalling = StringMarshalling.Utf16)]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial void EntrySetPath(EntryHandle entry, string path);
+    internal static partial void EntrySetPathWide(EntryHandle entry, string path);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_copy_symlink_w", StringMarshalling = StringMarshalling.Utf16)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial void EntrySetSymlinkWide(EntryHandle entry, string path);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_set_pathname_utf8", StringMarshalling = StringMarshalling.Utf8)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial void EntrySetPathUtf8(EntryHandle entry, string path);
+
+    [LibraryImport(Library, EntryPoint = "archive_entry_set_symlink_utf8", StringMarshalling = StringMarshalling.Utf8)]
+    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+    internal static partial void EntrySetSymlinkUtf8(EntryHandle entry, string path);
 
     [LibraryImport(Library, EntryPoint = "archive_entry_set_size")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
@@ -213,7 +271,7 @@ internal static unsafe partial class Native
 
     [LibraryImport(Library, EntryPoint = "archive_entry_set_mtime")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial void EntrySetMTime(EntryHandle entry, long seconds, int nanoseconds);
+    internal static partial void EntrySetMTime(EntryHandle entry, long seconds, CLong nanoseconds);
 
     [LibraryImport(Library, EntryPoint = "archive_error_string")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
