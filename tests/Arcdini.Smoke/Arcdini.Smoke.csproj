@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <SmokeTargetFramework Condition="'$(SmokeTargetFramework)' == ''">net11.0</SmokeTargetFramework>
+    <TargetFramework>$(SmokeTargetFramework)</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ArcdiniVersion Condition="'$(ArcdiniVersion)' == ''">0.1.0</ArcdiniVersion>
+    <RestoreAdditionalProjectSources>$(MSBuildThisFileDirectory)../../artifacts/packages</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Arcdini" Version="$(ArcdiniVersion)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,10 @@
+<Project>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../THIRD-PARTY-NOTICES.txt"
+          Link="Arcdini/THIRD-PARTY-NOTICES.txt"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="$(MSBuildThisFileDirectory)../LICENSE"
+          Link="Arcdini/LICENSE"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

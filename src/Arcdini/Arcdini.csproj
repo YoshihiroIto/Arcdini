@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <VersionPrefix>0.1.0</VersionPrefix>
+    <Authors>Yoshihiro Ito</Authors>
+    <Description>A .NET archive library backed by libarchive for Windows x64.</Description>
+    <RepositoryUrl>https://github.com/YoshihiroIto/Arcdini</RepositoryUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <NativeOutput>$(MSBuildThisFileDirectory)../../artifacts/native/win-x64</NativeOutput>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Arcdini.Tests" />
+    <None Include="../../LICENSE;../../README.md" Pack="true" PackagePath="/" />
+    <None Include="../../native/Arcdini.targets" Pack="true" PackagePath="buildTransitive/" />
+    <None Include="$(NativeOutput)/arcdini-libarchive.dll" Condition="Exists('$(NativeOutput)/arcdini-libarchive.dll')"
+          Pack="true" PackagePath="runtimes/win-x64/native/" />
+    <None Include="$(NativeOutput)/THIRD-PARTY-NOTICES.txt" Condition="Exists('$(NativeOutput)/THIRD-PARTY-NOTICES.txt')"
+          Pack="true" PackagePath="/" />
+  </ItemGroup>
+  <Target Name="RequireNativePackageFiles" BeforeTargets="GenerateNuspec">
+    <Error Condition="!Exists('$(NativeOutput)/arcdini-libarchive.dll') Or !Exists('$(NativeOutput)/THIRD-PARTY-NOTICES.txt')"
+           Text="Run native/Build-Windows.ps1 to build the Windows x64 DLL and its notices before packing Arcdini." />
+  </Target>
+</Project>

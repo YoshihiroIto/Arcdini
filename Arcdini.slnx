@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Arcdini/Arcdini.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Arcdini.Tests/Arcdini.Tests.csproj" />
+    <Project Path="tests/Arcdini.Smoke/Arcdini.Smoke.csproj">
+      <Build Project="false" />
+    </Project>
+  </Folder>
+</Solution>
