@@ -27,6 +27,9 @@
     <None Include="$(NativeOutput)/THIRD-PARTY-NOTICES.txt" Condition="Exists('$(NativeOutput)/THIRD-PARTY-NOTICES.txt')"
           Pack="true" PackagePath="/" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="11.0.0" />
+  </ItemGroup>
   <Target Name="RequireNativePackageFiles" BeforeTargets="GenerateNuspec">
     <Error Condition="!Exists('$(NativeOutput)/arcdini-libarchive.dll') Or !Exists('$(NativeOutput)/THIRD-PARTY-NOTICES.txt')"
            Text="Run native/Build-Windows.ps1 to build the Windows x64 DLL and its notices before packing Arcdini." />
