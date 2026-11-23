@@ -1,18 +1,18 @@
 # Arcdini
 
-libarchive を使って圧縮アーカイブを扱う .NET ライブラリです。.NET 8 以降のアプリから利用できます。NuGet パッケージに Windows x64 用 DLL を同梱します。ソースから組み込むアプリ向けに macOS arm64 と x64 の dylib もビルドできます。
+Arcdini is a .NET library for working with archives using libarchive. It supports .NET 8 and later. The NuGet package includes a native Windows x64 DLL. Applications integrating Arcdini from source can also build a macOS dylib for arm64 or x64.
 
-## 対応形式
+## Supported formats
 
-| 形式 | 一覧・展開・読み取り | 作成 |
+| Format | List, extract, and read | Create |
 | --- | --- | --- |
-| ZIP | 通常の ZIP、ZipCrypto、WinZip AES | 通常の ZIP、WinZip AES-256 |
-| 7z | 暗号化されていない 7z | 暗号化されていない 7z |
-| TAR | 非圧縮、gzip、bzip2、lzip、xz、Zstandard | 非圧縮、gzip、bzip2、lzip、xz、Zstandard |
+| ZIP | Standard ZIP, ZipCrypto, WinZip AES | Standard ZIP, WinZip AES-256 |
+| 7z | Unencrypted 7z | Unencrypted 7z |
+| TAR | Uncompressed, gzip, bzip2, lzip, xz, Zstandard | Uncompressed, gzip, bzip2, lzip, xz, Zstandard |
 
-扱える ZIP 圧縮方式は libarchive に準拠します。Deflate64、Shrink、Reduce、Implode は対象外です。RAR・RAR5 のデコーダーはネイティブ DLL のコンパイル対象から除外しています。一覧のサイズは展開後の値です。
+ZIP compression support follows libarchive. Deflate64, Shrink, Reduce, and Implode are unsupported. The native DLL is built without the RAR and RAR5 decoders. Listed entry sizes are uncompressed sizes.
 
-## 使い方
+## Usage
 
 ```csharp
 using Arcdini;
@@ -38,24 +38,24 @@ using (var content = archive.OpenEntry(report.Id, cancellationToken))
 archive.ExtractEntries([report.Id], "output", cancellationToken: cancellationToken);
 ```
 
-- 全体の展開には `ExtractAll` を使います。`ExtractEntries` でフォルダーの ID を指定すると、その配下も展開されます。同名エントリも ID で区別できます。
-- `Open` と `Create` はファイルパスと `Stream` を受け付けます。ストリーム入力は現在位置から末尾までを使います。シークできない入力は一時ファイルにコピーします。`leaveOpen: true` を指定すると、渡したストリームの所有権を呼び出し元に保持できます。
-- `OpenEntry` が返すストリームは前方読み取り専用です。同じ `ArchiveFile` で次の操作を始める前に、そのストリームを破棄してください。並行して読む場合は、別々の `ArchiveFile` と入力を使えます。
-- 読み取りパスワードは `ArchiveReadOptions.Password`、ZIP の作成パスワードは `ArchiveCreationOptions.Password` に渡します。作成・展開の進捗は `IProgress<ArchiveProgress>` で受け取れます。書庫処理のエラーは `ArchiveException.Error` で判別できます。
-- 展開先では通常ファイルとディレクトリを作成し、書庫内のリンクや既存のリパースポイントを拒否します。既存ファイルの置き換えはオプションで有効にできます。処理中の一時ファイルは失敗・キャンセル時に削除し、すでに展開を終えたファイルは残ります。展開中は別のプロセスから展開先のディレクトリ構成を変更しないでください。
-- `RestoreSymbolicLinks` を有効にすると、展開先に収まる相対パスを指すシンボリックリンクを復元できます。ZIP・TAR の作成時にリンクを収録するには `ArchiveEntrySource.SymbolicLink` を使います。
-- ファイルへの書庫作成は完了後に書庫を配置します。出力ストリームに直接作成した場合は、失敗時に書き込み済みのデータが残ることがあります。
+- Use `ExtractAll` to extract the entire archive. When you pass a directory ID to `ExtractEntries`, it also extracts all entries under that directory. IDs distinguish entries with the same name.
+- `Open` and `Create` accept file paths and `Stream` instances. Arcdini reads input streams from their current position to the end and copies non-seekable input to a temporary file. Set `leaveOpen: true` to retain ownership of the stream you pass in.
+- `OpenEntry` returns a forward-only read stream. Dispose it before starting another operation on the same `ArchiveFile`. Use separate `ArchiveFile` instances and inputs to read in parallel.
+- Set `ArchiveReadOptions.Password` to read an encrypted archive and `ArchiveCreationOptions.Password` to create an encrypted ZIP. Use `IProgress<ArchiveProgress>` to receive progress updates during creation and extraction. Use `ArchiveException.Error` to identify the kind of error.
+- By default, extraction creates regular files and directories and rejects archive links and existing reparse points. You can enable overwriting of existing files. On failure or cancellation, Arcdini removes temporary files and keeps files that finished extracting. Keep other processes from modifying the destination directory structure during extraction.
+- Enable `RestoreSymbolicLinks` to restore symbolic links whose relative targets resolve within the extraction directory. Use `ArchiveEntrySource.SymbolicLink` to include a link when creating a ZIP or TAR archive.
+- When creating an archive at a file path, Arcdini moves the finished archive into place after writing completes. When writing directly to an output stream, a failure can leave partial output in the stream.
 
-## ビルドと検証
+## Build and verification
 
-IDE では `Arcdini.slnx` を開きます。ライブラリのビルドと単体テストは、Windows x64 と .NET 10 以降の SDK で、リポジトリのルートから実行できます。
+Open `Arcdini.slnx` in your IDE. On Windows x64 with the .NET 10 SDK or later, run the following commands from the repository root to build the library and run the unit tests.
 
 ```powershell
 dotnet build -c Release
 dotnet test -c Release
 ```
 
-`Arcdini.Smoke` はローカル NuGet を参照するので、パック後にプロジェクトを指定して実行します。ネイティブ DLL のビルドとスモークテストには、Windows x64、PowerShell 7、CMake 4.2 以降、Visual Studio 2026 の C++ ツール、.NET 11 SDK が必要です。
+`Arcdini.Smoke` uses the local NuGet package. Build the package first, then run the smoke test project directly. Building the native DLL and running the smoke tests requires Windows x64, PowerShell 7, CMake 4.2 or later, the Visual Studio 2026 C++ tools, and the .NET 11 SDK.
 
 ```powershell
 ./native/Build-Windows.ps1
@@ -65,8 +65,8 @@ dotnet publish tests/Arcdini.Smoke -c Release -r win-x64 -p:PublishAot=true -o a
 ./artifacts/smoke-aot/Arcdini.Smoke.exe
 ```
 
-ビルドスクリプトは SHA-256 を固定した libarchive 3.8.11、zlib 1.3.2、bzip2 1.0.8、liblzma 5.8.3、Zstandard 1.5.7 のソースを取得します。圧縮ライブラリは静的にリンクし、ZIP の暗号処理には Windows CNG を使います。
+The build scripts download libarchive 3.8.11, zlib 1.3.2, bzip2 1.0.8, liblzma 5.8.3, and Zstandard 1.5.7 and verify their SHA-256 checksums against pinned values. The native build links the compression libraries statically and uses Windows CNG for ZIP encryption.
 
-NuGet を参照したアプリのビルド・発行先には `Arcdini/LICENSE` と `Arcdini/THIRD-PARTY-NOTICES.txt` がコピーされます。ZIP やインストーラーを組み立てる際にも、そのファイルを配布物に含めてください。
+The NuGet package copies `Arcdini/LICENSE` and `Arcdini/THIRD-PARTY-NOTICES.txt` to the build and publish outputs of applications that reference it. Include both files when distributing the application in a ZIP or installer.
 
-macOS で dylib を生成するには、PowerShell 7、CMake、Xcode Command Line Tools を用意し、`./native/Build-macOS.ps1 -Architecture arm64` または `-Architecture x86_64` を実行します。アプリには `artifacts/native/osx-*/libarcdini-libarchive.dylib` と同ディレクトリの通知文、Arcdini のライセンスを同梱してください。
+To build the dylib on macOS, install PowerShell 7, CMake, and the Xcode Command Line Tools. Run `./native/Build-macOS.ps1 -Architecture arm64` or `./native/Build-macOS.ps1 -Architecture x86_64`. Bundle `artifacts/native/osx-*/libarcdini-libarchive.dylib` with your application along with the notices from the same directory and the Arcdini license.

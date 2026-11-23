@@ -1,14 +1,14 @@
-# Arcdini 実装状況
+# Arcdini implementation status
 
-更新日 2026-11-23
+Updated November 23, 2026
 
-参照会話「Filedini性能改善案」に基づき、独立した .NET ライブラリと Windows x64 用の NuGet を作る。Filedini への組み込みは後続作業。
+The "Filedini performance improvements" discussion outlined a standalone .NET library and a Windows x64 NuGet package. Integration with Filedini was deferred to follow-up work.
 
-- [x] 参照会話と既存リポジトリを確認。既存のコードはなく、MIT ライセンスが設定済み。
-- [x] RAR・RAR5 を除いた libarchive をビルド。DLL の依存先は bcrypt.dll と KERNEL32.dll。RAR 用のソースとエクスポートがなく、DLL と通知文を `Arcdini.0.1.0.nupkg` に同梱したことを確認。
-- [x] 一覧、全体・選択展開、内容のストリーム読み取り、作成、暗号化情報、パスワード、進捗、キャンセル、型付きエラーを実装。Release ビルドは警告・エラーともに 0 件。
-- [x] 同じ NuGet を参照する検証アプリが .NET 11 と win-x64 NativeAOT で成功。7 形式の作成・一覧・読み取り・選択展開・全展開、日本語パス、暗号化 ZIP、キャンセル、危険な展開パスの拒否を確認。
-- [x] 通知文と展開時のファイル処理の修正を反映した最終 NuGet を再作成。7 形式の空書庫を追加し、.NET 11 と NativeAOT で全項目に合格。
-- [x] 最小対象の .NET 8 でも最終 NuGet の全項目に合格。検証アプリは `-p:SmokeTargetFramework=net8.0` で対象を切り替えられる。サンドボックス内の NuGet 監査情報取得警告はネットワークアクセス付きの再復元で解消。
-- [x] xUnit の単体テストを追加。Windows x64 の .NET 8 で 38 件合格、失敗・スキップともに 0 件。`dotnet test --project tests/Arcdini.Tests -c Release` で実行できる。
-- [x] ライブラリと両方のテストを `Arcdini.slnx` に統合。存在しないローカル NuGet バージョンを指定した状態で、ルートの `dotnet build -c Release` は警告・エラー 0 件、`dotnet test -c Release` は 38 件合格。
+- [x] Reviewed the discussion and the existing repository. The repository had an MIT license and no code.
+- [x] Built libarchive without RAR or RAR5 support. The DLL depends on `bcrypt.dll` and `KERNEL32.dll`. Verified that the build excluded RAR sources and exports and that `Arcdini.0.1.0.nupkg` contained the DLL and notices.
+- [x] Implemented archive listing, full and selective extraction, reading entry contents as streams, archive creation, encryption metadata, password support, progress reporting, cancellation, and typed errors. The Release build reported zero warnings and errors.
+- [x] Ran the smoke test application against the same NuGet package on .NET 11 and win-x64 NativeAOT. Verified creation, listing, reading, selective extraction, and full extraction for seven formats, along with Japanese paths, encrypted ZIP archives, cancellation, and rejection of unsafe extraction paths.
+- [x] Rebuilt the final NuGet package with fixes to the notices and file handling during extraction. Added empty archives for all seven formats. All checks passed on .NET 11 and NativeAOT.
+- [x] Verified that all smoke checks for the final NuGet package also passed on .NET 8, the minimum supported target. Use `-p:SmokeTargetFramework=net8.0` to switch the smoke test target. Restoring again with network access resolved the NuGet audit warnings from the sandboxed restore.
+- [x] Added xUnit unit tests. All 38 tests passed on Windows x64 with .NET 8. No tests failed or were skipped. Run them with `dotnet test --project tests/Arcdini.Tests -c Release`.
+- [x] Added the library and both test projects to `Arcdini.slnx`. With the smoke test project pointed at a local package version that did not exist, `dotnet build -c Release` from the repository root reported zero warnings and errors, and `dotnet test -c Release` passed all 38 tests.
