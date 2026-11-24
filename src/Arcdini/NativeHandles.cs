@@ -9,9 +9,10 @@ internal abstract class CallbackHandle : SafeHandleZeroOrMinusOneIsInvalid
 
     protected CallbackHandle(nint pointer) : base(ownsHandle: true)
     {
-        SetHandle(pointer);
-        if (IsInvalid)
+        if (pointer is 0 or -1)
             throw new ArchiveException(ArchiveError.NativeFailure, "libarchive could not allocate a handle.");
+
+        SetHandle(pointer);
     }
 
     internal nint SetContext(object state)
