@@ -213,7 +213,7 @@ public sealed partial class ArchiveFile : IDisposable
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var count = source.Read(buffer);
-                if (count == 0)
+                if (count is 0)
                     break;
                 destination.Write(buffer, 0, count);
             }

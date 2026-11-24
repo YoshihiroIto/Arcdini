@@ -72,7 +72,7 @@ void RoundTrip(ArchiveFormat format)
     progress = new InlineProgress();
     archive.ExtractAll(entire, progress: progress);
     Check(Directory.Exists(Path.Combine(entire, "空")) &&
-        new FileInfo(Path.Combine(entire, "zero.txt")).Length == 0, $"{format} full extraction");
+        new FileInfo(Path.Combine(entire, "zero.txt")).Length is 0, $"{format} full extraction");
     Check(progress.Last.EntriesCompleted == 4 && progress.Last.BytesTransferred == payload.Length, $"{format} extraction progress");
     Console.WriteLine($"{format}: create, list, stream, select and extract");
 }
@@ -111,7 +111,7 @@ static void EmptyArchive(ArchiveFormat format)
     ArchiveFile.Create(stream, [], new(format), leaveOpen: true);
     stream.Position = 0;
     using var archive = ArchiveFile.Open(stream, leaveOpen: true);
-    Check(archive.GetEntries().Count == 0, $"{format} empty archive");
+    Check(archive.GetEntries().Count is 0, $"{format} empty archive");
 }
 
 void DuplicateEntries()

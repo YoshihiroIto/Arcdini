@@ -87,7 +87,7 @@ public sealed partial class ArchiveFile
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         var count = source.Read(buffer.AsSpan(0, (int)Math.Min(buffer.Length, remaining)));
-                        if (count == 0)
+                        if (count is 0)
                             throw new EndOfStreamException(
                                 $"The source for {entry.Path} ended before its declared size.");
                         writer.Write(buffer.AsSpan(0, count), entry.Path);

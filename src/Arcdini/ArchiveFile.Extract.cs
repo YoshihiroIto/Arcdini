@@ -39,7 +39,7 @@ public sealed partial class ArchiveFile
         ArgumentException.ThrowIfNullOrEmpty(destinationDirectory);
         cancellationToken.ThrowIfCancellationRequested();
         var ids = entryIds.ToHashSet();
-        if (ids.Count == 0)
+        if (ids.Count is 0)
         {
             Acquire(cancellationToken);
             Release();
@@ -114,7 +114,7 @@ public sealed partial class ArchiveFile
                     }
 
                     var components = ArchivePaths.ValidateEntryPath(relativePath);
-                    var output = components.Length == 0 ? root : Path.Join(root, Path.Join(components));
+                    var output = components.Length is 0 ? root : Path.Join(root, Path.Join(components));
                     if (linkPaths is not null && HasLinkAncestor(output, linkPaths))
                     {
                         reader.Skip();
@@ -232,7 +232,7 @@ public sealed partial class ArchiveFile
         string root, string output, string target, ArchiveEntry entry, ArchiveExtractionOptions options,
         List<(string Path, bool IsDirectory)>? created)
     {
-        if (Path.IsPathRooted(target) || target.Length == 0 || target[0] is '/' or '\\' || target.Contains(':'))
+        if (Path.IsPathRooted(target) || target.Length is 0 || target[0] is '/' or '\\' || target.Contains(':'))
             return;
 
         var parent = Path.GetDirectoryName(output)!;

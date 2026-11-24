@@ -75,7 +75,7 @@ internal sealed unsafe class NativeReader : IDisposable
             _ => ArchiveEntryKind.Other
         };
         long? size = Native.EntryHasSize(entry) != 0 ? Native.EntrySize(entry) : null;
-        if (kind == ArchiveEntryKind.File && size == 0 &&
+        if (kind == ArchiveEntryKind.File && size is 0 &&
             (Native.ReadFormat(_handle) & Native.FormatFamilyMask) == Native.TarFormatFamily)
         {
             var directoryPath = path.TrimEnd();
@@ -123,16 +123,16 @@ internal sealed unsafe class NativeReader : IDisposable
         => _input.Check(_handle, status, operation, ArchiveError.InvalidArchive, Current?.Path);
 
     private static DateTimeOffset? GetLastWriteTime(nint entry)
-        => Native.EntryHasMTime(entry) == 0
+        => Native.EntryHasMTime(entry) is 0
             ? null
             : ReadTime(Native.EntryMTime(entry), Native.EntryMTimeNanoseconds(entry));
 
     internal (DateTimeOffset? Created, DateTimeOffset? Accessed) GetCreationAndAccessTimes()
         => (
-            Native.EntryHasBirthTime(_entry) == 0
+            Native.EntryHasBirthTime(_entry) is 0
                 ? null
                 : ReadTime(Native.EntryBirthTime(_entry), Native.EntryBirthTimeNanoseconds(_entry)),
-            Native.EntryHasATime(_entry) == 0
+            Native.EntryHasATime(_entry) is 0
                 ? null
                 : ReadTime(Native.EntryATime(_entry), Native.EntryATimeNanoseconds(_entry)));
 

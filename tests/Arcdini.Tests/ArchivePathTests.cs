@@ -15,6 +15,8 @@ public sealed class ArchivePathTests
     [InlineData("folder./file.txt")]
     [InlineData("folder /file.txt")]
     [InlineData("file\u0001.txt")]
+    [InlineData("file\u007F.txt")]
+    [InlineData("file\u0085.txt")]
     [InlineData("bad?.txt")]
     [InlineData("folder/nUl.txt")]
     [InlineData("CON .txt")]

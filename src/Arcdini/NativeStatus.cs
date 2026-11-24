@@ -39,7 +39,7 @@ internal class NativeStatus(CancellationToken cancellationToken)
 
     internal static void ValidatePassword(string? password)
     {
-        if (password is not null && (password.Length == 0 || password.Contains('\0')))
+        if (password is not null && (password.Length is 0 || password.Contains('\0')))
             throw new ArgumentException("A password must be nonempty and cannot contain NUL.", nameof(password));
     }
 
