@@ -60,7 +60,8 @@ internal sealed unsafe class NativeReader : IDisposable
 
         var entry = _entry;
         var path = OperatingSystem.IsWindows()
-            ? Marshal.PtrToStringUni(Native.EntryPathWide(entry)) ?? Marshal.PtrToStringUTF8(Native.EntryPathUtf8(entry))
+            ? Marshal.PtrToStringUni(Native.EntryPathWide(entry)) ??
+              Marshal.PtrToStringUTF8(Native.EntryPathUtf8(entry))
             : Marshal.PtrToStringUTF8(Native.EntryPathUtf8(entry));
         if (string.IsNullOrEmpty(path))
             throw new ArchiveException(ArchiveError.InvalidArchive, "Could not decode the entry path.");
@@ -84,12 +85,15 @@ internal sealed unsafe class NativeReader : IDisposable
                 kind = ArchiveEntryKind.Directory;
             }
         }
+
         LinkTarget = kind == ArchiveEntryKind.SymbolicLink
             ? OperatingSystem.IsWindows()
-                ? Marshal.PtrToStringUni(Native.EntrySymlinkWide(entry)) ?? Marshal.PtrToStringUTF8(Native.EntrySymlinkUtf8(entry))
+                ? Marshal.PtrToStringUni(Native.EntrySymlinkWide(entry)) ??
+                  Marshal.PtrToStringUTF8(Native.EntrySymlinkUtf8(entry))
                 : Marshal.PtrToStringUTF8(Native.EntrySymlinkUtf8(entry))
             : null;
-        Current = new ArchiveEntry(_nextId++, path, kind, size, GetLastWriteTime(entry), Native.EntryEncrypted(entry) != 0);
+        Current = new ArchiveEntry(_nextId++, path, kind, size, GetLastWriteTime(entry),
+            Native.EntryEncrypted(entry) != 0);
         return true;
     }
 
@@ -119,14 +123,18 @@ internal sealed unsafe class NativeReader : IDisposable
         => _input.Check(_handle, status, operation, ArchiveError.InvalidArchive, Current?.Path);
 
     private static DateTimeOffset? GetLastWriteTime(nint entry)
-        => Native.EntryHasMTime(entry) == 0 ? null :
-            ReadTime(Native.EntryMTime(entry), Native.EntryMTimeNanoseconds(entry));
+        => Native.EntryHasMTime(entry) == 0
+            ? null
+            : ReadTime(Native.EntryMTime(entry), Native.EntryMTimeNanoseconds(entry));
 
     internal (DateTimeOffset? Created, DateTimeOffset? Accessed) GetCreationAndAccessTimes()
-        => (Native.EntryHasBirthTime(_entry) == 0 ? null :
-                ReadTime(Native.EntryBirthTime(_entry), Native.EntryBirthTimeNanoseconds(_entry)),
-            Native.EntryHasATime(_entry) == 0 ? null :
-                ReadTime(Native.EntryATime(_entry), Native.EntryATimeNanoseconds(_entry)));
+        => (
+            Native.EntryHasBirthTime(_entry) == 0
+                ? null
+                : ReadTime(Native.EntryBirthTime(_entry), Native.EntryBirthTimeNanoseconds(_entry)),
+            Native.EntryHasATime(_entry) == 0
+                ? null
+                : ReadTime(Native.EntryATime(_entry), Native.EntryATimeNanoseconds(_entry)));
 
     private static DateTimeOffset? ReadTime(long seconds, CLong nanoseconds)
     {

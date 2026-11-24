@@ -14,7 +14,7 @@ public sealed partial class ArchiveFile
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        ValidateCreation(entries, options, cancellationToken);
+        ValidateCreation(options, cancellationToken);
         var output = ArchivePaths.GetFullPath(path);
         ArchivePaths.CheckDestination(output, overwrite, path);
         var temporary = ArchivePaths.CreateTemporaryFile(Path.GetDirectoryName(output)!);
@@ -48,7 +48,7 @@ public sealed partial class ArchiveFile
         ArgumentNullException.ThrowIfNull(destination);
         if (!destination.CanWrite)
             throw new ArgumentException("The archive destination must be writable.", nameof(destination));
-        ValidateCreation(entries, options, cancellationToken);
+        ValidateCreation(options, cancellationToken);
         try
         {
             CreateArchive(destination, entries, options, progress, cancellationToken);
@@ -88,20 +88,24 @@ public sealed partial class ArchiveFile
                         cancellationToken.ThrowIfCancellationRequested();
                         var count = source.Read(buffer.AsSpan(0, (int)Math.Min(buffer.Length, remaining)));
                         if (count == 0)
-                            throw new EndOfStreamException($"The source for {entry.Path} ended before its declared size.");
+                            throw new EndOfStreamException(
+                                $"The source for {entry.Path} ended before its declared size.");
                         writer.Write(buffer.AsSpan(0, count), entry.Path);
                         remaining -= count;
                         bytes += count;
                         progress?.Report(new(entry.Path, completed, bytes));
                     }
+
                     cancellationToken.ThrowIfCancellationRequested();
                     if (source.ReadByte() != -1)
                         throw new IOException($"The source for {entry.Path} exceeds its declared size.");
                 }
+
                 writer.FinishEntry(entry.Path);
                 completed++;
                 progress?.Report(new(entry.Path, completed, bytes));
             }
+
             cancellationToken.ThrowIfCancellationRequested();
             writer.Complete();
         }
@@ -111,16 +115,15 @@ public sealed partial class ArchiveFile
         }
     }
 
-    private static void ValidateCreation(
-        IEnumerable<ArchiveEntrySource> entries, ArchiveCreationOptions options, CancellationToken cancellationToken)
+    private static void ValidateCreation(ArchiveCreationOptions options, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(options);
         if (!Enum.IsDefined(options.Format))
             throw new ArgumentOutOfRangeException(nameof(options));
         NativeStatus.ValidatePassword(options.Password);
         if (options.Password is not null && options.Format != ArchiveFormat.Zip)
-            throw new ArchiveException(ArchiveError.UnsupportedFeature, "Arcdini only supports encryption when creating ZIP archives.");
+            throw new ArchiveException(ArchiveError.UnsupportedFeature,
+                "Arcdini only supports encryption when creating ZIP archives.");
         NativeStatus.CheckPlatform();
         cancellationToken.ThrowIfCancellationRequested();
     }

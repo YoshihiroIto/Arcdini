@@ -14,7 +14,8 @@ internal class NativeStatus(CancellationToken cancellationToken)
         _callbackError ??= ExceptionDispatchInfo.Capture(error);
     }
 
-    internal void Check(SafeHandle handle, long status, string operation, ArchiveError fallback, string? entryPath = null)
+    internal void Check(SafeHandle handle, long status, string operation, ArchiveError fallback,
+        string? entryPath = null)
     {
         _callbackError?.Throw();
         CancellationToken.ThrowIfCancellationRequested();

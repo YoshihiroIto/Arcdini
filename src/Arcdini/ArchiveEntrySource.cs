@@ -10,7 +10,7 @@ public sealed class ArchiveEntrySource
         string? filePath = null, Func<Stream>? openStream = null, string? linkTarget = null)
     {
         var components = ArchivePaths.ValidateEntryPath(path);
-        if (components.Length == 0)
+        if (components.Length is 0)
             throw ArchivePaths.UnsafePath(path);
         Path = string.Join('/', components);
         Size = size;
@@ -61,7 +61,7 @@ public sealed class ArchiveEntrySource
 
     internal Stream? OpenContent()
     {
-        if (_filePath is not null)
+        if (_filePath is { })
             return File.OpenRead(_filePath);
         if (_openStream is null)
             return null;

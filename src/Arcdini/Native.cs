@@ -60,7 +60,8 @@ internal static unsafe partial class Native
 
     [LibraryImport(Library, EntryPoint = "archive_read_set_seek_callback")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial int ReadSetSeek(ReadHandle archive, delegate* unmanaged[Cdecl]<nint, nint, long, int, long> callback);
+    internal static partial int ReadSetSeek(ReadHandle archive,
+        delegate* unmanaged[Cdecl]<nint, nint, long, int, long> callback);
 
     [LibraryImport(Library, EntryPoint = "archive_read_open2")]
     [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]

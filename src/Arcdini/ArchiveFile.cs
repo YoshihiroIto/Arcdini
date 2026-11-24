@@ -7,7 +7,7 @@ public sealed partial class ArchiveFile : IDisposable
     private readonly long _origin;
     private readonly bool _ownsSource;
     private readonly string? _password;
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private bool _disposed;
     private bool _active;
     private IReadOnlyList<ArchiveEntry>? _entries;
@@ -58,6 +58,7 @@ public sealed partial class ArchiveFile : IDisposable
                 if (!leaveOpen)
                     source.Dispose();
             }
+
             temporary.Position = 0;
             return new ArchiveFile(temporary, ownsSource: true, options?.Password);
         }
@@ -73,7 +74,7 @@ public sealed partial class ArchiveFile : IDisposable
         Acquire(cancellationToken);
         try
         {
-            if (_entries is not null)
+            if (_entries is { })
                 return _entries;
 
             using var reader = NewReader(cancellationToken);
@@ -83,6 +84,7 @@ public sealed partial class ArchiveFile : IDisposable
                 entries.Add(reader.Current!);
                 reader.Skip();
             }
+
             return _entries = entries.AsReadOnly();
         }
         finally
@@ -132,19 +134,29 @@ public sealed partial class ArchiveFile : IDisposable
                 if (matches(entry))
                 {
                     if (entry.Kind != ArchiveEntryKind.File)
-                        throw new ArchiveException(ArchiveError.UnsupportedFeature, "Only regular files have readable data.", entry.Path);
+                        throw new ArchiveException(ArchiveError.UnsupportedFeature,
+                            "Only regular files have readable data.", entry.Path);
                     return new EntryReadStream(reader, Release);
                 }
+
                 reader.Skip();
             }
+
             reader.Dispose();
             Release();
             return null;
         }
         catch
         {
-            try { reader?.Dispose(); }
-            finally { Release(); }
+            try
+            {
+                reader?.Dispose();
+            }
+            finally
+            {
+                Release();
+            }
+
             throw;
         }
     }

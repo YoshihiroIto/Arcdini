@@ -82,7 +82,8 @@ public sealed class ArchiveFileTests
     public void DisposedArchiveRejectsListingBeforeReading()
     {
         using var source = new MemoryStream();
-        var archive = ArchiveFile.Open(source, leaveOpen: true, cancellationToken: TestContext.Current.CancellationToken);
+        var archive = ArchiveFile.Open(source, leaveOpen: true,
+            cancellationToken: TestContext.Current.CancellationToken);
         archive.Dispose();
 
         Assert.Throws<ObjectDisposedException>(() => archive.GetEntries(TestContext.Current.CancellationToken));
@@ -91,7 +92,8 @@ public sealed class ArchiveFileTests
     [Fact]
     public void OpenEntryRejectsNegativeIdBeforeReading()
     {
-        using var archive = ArchiveFile.Open(new MemoryStream(), cancellationToken: TestContext.Current.CancellationToken);
+        using var archive =
+            ArchiveFile.Open(new MemoryStream(), cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Throws<ArgumentOutOfRangeException>("entryId",
             () => archive.OpenEntry(-1, TestContext.Current.CancellationToken));

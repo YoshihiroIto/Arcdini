@@ -47,7 +47,8 @@ internal sealed unsafe class NativeWriter : IDisposable
             if (options.Password is { } password)
             {
                 Check(Native.WriteSetPassphrase(_handle, password), "Set ZIP passphrase");
-                Check(Native.WriteFormatOption(_handle, "zip", "encryption", "aes256"), "Enable ZIP AES-256 encryption");
+                Check(Native.WriteFormatOption(_handle, "zip", "encryption", "aes256"),
+                    "Enable ZIP AES-256 encryption");
             }
 
             Check(Native.WriteLastBlock(_handle, 1), "Set archive block padding");
@@ -79,12 +80,14 @@ internal sealed unsafe class NativeWriter : IDisposable
             else
                 Native.EntrySetSymlinkUtf8(entry, linkTarget);
         }
+
         if (lastWriteTime is { } time)
         {
             var seconds = time.ToUnixTimeSeconds();
             var fraction = time.UtcTicks - DateTimeOffset.FromUnixTimeSeconds(seconds).UtcTicks;
             Native.EntrySetMTime(entry, seconds, new CLong(checked((int)(fraction * 100))));
         }
+
         Check(Native.WriteHeader(_handle, entry), "Write archive entry header", source.Path);
     }
 
@@ -96,7 +99,8 @@ internal sealed unsafe class NativeWriter : IDisposable
             var written = Native.WriteData(_handle, pointer, (nuint)data.Length);
             Check(written, "Write archive entry data", entryPath);
             if (written != data.Length)
-                throw new ArchiveException(ArchiveError.NativeFailure, "libarchive did not accept all entry data.", entryPath);
+                throw new ArchiveException(ArchiveError.NativeFailure, "libarchive did not accept all entry data.",
+                    entryPath);
         }
     }
 

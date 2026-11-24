@@ -56,6 +56,7 @@ public sealed partial class ArchiveFile
             if (entry.Kind == ArchiveEntryKind.Directory)
                 directories.Add(string.Join('/', ArchivePaths.ValidateEntryPath(entry.Path)));
         }
+
         if (directories.Count != 0)
         {
             foreach (var entry in entries)
@@ -127,6 +128,7 @@ public sealed partial class ArchiveFile
                             if (times != default)
                                 directoryTimes[output] = times;
                         }
+
                         reader.Skip();
                     }
                     else if (entry.Kind == ArchiveEntryKind.File && components.Length != 0)
@@ -141,18 +143,23 @@ public sealed partial class ArchiveFile
                             (links ??= []).Add((entry, output, target));
                             (linkPaths ??= new HashSet<string>(pathComparer)).Add(output);
                         }
+
                         reader.Skip();
                     }
                     else
                     {
-                        throw new ArchiveException(ArchiveError.UnsafeEntry, "Only regular files and directories can be extracted.", entry.Path);
+                        throw new ArchiveException(ArchiveError.UnsafeEntry,
+                            "Only regular files and directories can be extracted.", entry.Path);
                     }
+
                     completed++;
                     progress?.Report(new(entry.Path, completed, bytes));
                     cancellationToken.ThrowIfCancellationRequested();
                 }
+
                 if (selection is not null && completed != selection.Count)
-                    throw new ArchiveException(ArchiveError.EntryNotFound, "The archive ended before all selected entries were found.");
+                    throw new ArchiveException(ArchiveError.EntryNotFound,
+                        "The archive ended before all selected entries were found.");
 
                 if (links is not null)
                 {
@@ -169,6 +176,7 @@ public sealed partial class ArchiveFile
                     ArchivePaths.RejectReparsePoint(pair.Key, pair.Key);
                     ApplyTimestamps(new DirectoryInfo(pair.Key), pair.Value);
                 }
+
                 return completed;
             }
             catch (OperationCanceledException)
@@ -216,6 +224,7 @@ public sealed partial class ArchiveFile
             if (linkPaths.Contains(parent))
                 return true;
         }
+
         return false;
     }
 
@@ -321,9 +330,12 @@ public sealed partial class ArchiveFile
                     bytes += count;
                     progress?.Report(new(entry.Path, completed, bytes));
                 }
-                if (entry.Size is long size && entryBytes != size)
-                    throw new ArchiveException(ArchiveError.InvalidArchive, "The extracted size does not match the entry header.", entry.Path);
+
+                if (entry.Size is { } size && entryBytes != size)
+                    throw new ArchiveException(ArchiveError.InvalidArchive,
+                        "The extracted size does not match the entry header.", entry.Path);
             }
+
             cancellationToken.ThrowIfCancellationRequested();
             if (times != default)
                 ApplyTimestamps(new FileInfo(temporaryPath), times);
@@ -358,7 +370,10 @@ public sealed partial class ArchiveFile
             output.LastWriteTimeUtc = modified.UtcDateTime;
     }
 
-    private readonly record struct ExtractionTimes(DateTimeOffset? Created, DateTimeOffset? Accessed, DateTimeOffset? Modified);
+    private readonly record struct ExtractionTimes(
+        DateTimeOffset? Created,
+        DateTimeOffset? Accessed,
+        DateTimeOffset? Modified);
 
     private static bool IsInDirectory(string path, HashSet<string> directories)
     {
@@ -371,6 +386,7 @@ public sealed partial class ArchiveFile
                 return true;
             end = path.LastIndexOf('/', end - 1);
         }
+
         return false;
     }
 }

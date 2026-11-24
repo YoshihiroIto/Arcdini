@@ -40,6 +40,7 @@ internal static class ArchivePaths
                 IsDeviceName(component))
                 throw UnsafePath(path);
         }
+
         return components;
     }
 
@@ -47,7 +48,8 @@ internal static class ArchivePaths
         string path, string entryPath, List<(string Path, bool IsDirectory)>? created = null)
     {
         var root = Path.GetPathRoot(path)!;
-        foreach (var part in path[root.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        foreach (var part in path[root.Length..]
+                     .Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
         {
             root = Path.Join(root, part);
             var attributes = RejectReparsePoint(root, entryPath);
@@ -76,8 +78,10 @@ internal static class ArchivePaths
         {
             return null;
         }
+
         if ((attributes & FileAttributes.ReparsePoint) != 0)
-            throw new ArchiveException(ArchiveError.UnsafeEntry, $"The destination contains a reparse point: {path}", entryPath);
+            throw new ArchiveException(ArchiveError.UnsafeEntry, $"The destination contains a reparse point: {path}",
+                entryPath);
         return attributes;
     }
 
@@ -112,7 +116,8 @@ internal static class ArchivePaths
     }
 
     internal static ArchiveException UnsafePath(string entryPath)
-        => new(ArchiveError.UnsafeEntry, $"The archive path cannot be used as a Windows relative path: {entryPath}", entryPath);
+        => new(ArchiveError.UnsafeEntry, $"The archive path cannot be used as a Windows relative path: {entryPath}",
+            entryPath);
 
     private static ArchiveException Exists(string path, string entryPath)
         => new(ArchiveError.DestinationExists, $"The destination already exists: {path}", entryPath);
@@ -123,6 +128,7 @@ internal static class ArchivePaths
         var stem = (dot < 0 ? component : component[..dot]).TrimEnd(' ').ToUpperInvariant();
         return stem is "CON" or "PRN" or "AUX" or "NUL" or "CONIN$" or "CONOUT$" ||
                (stem.Length == 4 && (stem.StartsWith("COM", StringComparison.Ordinal) ||
-                 stem.StartsWith("LPT", StringComparison.Ordinal)) && "0123456789¹²³".Contains(stem[3]));
+                                     stem.StartsWith("LPT", StringComparison.Ordinal)) &&
+                "0123456789¹²³".Contains(stem[3]));
     }
 }
