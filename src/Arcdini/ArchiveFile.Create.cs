@@ -80,7 +80,7 @@ public sealed partial class ArchiveFile
                 using var source = entry.OpenContent();
                 var size = entry.GetSize(source);
                 writer.WriteHeader(entry, size, entry.GetLastWriteTime());
-                if (source is not null)
+                if (source is { })
                 {
                     long remaining = size;
                     while (remaining > 0)
@@ -121,7 +121,7 @@ public sealed partial class ArchiveFile
         if (!Enum.IsDefined(options.Format))
             throw new ArgumentOutOfRangeException(nameof(options));
         NativeStatus.ValidatePassword(options.Password);
-        if (options.Password is not null && options.Format != ArchiveFormat.Zip)
+        if (options.Password is { } && options.Format != ArchiveFormat.Zip)
             throw new ArchiveException(ArchiveError.UnsupportedFeature,
                 "Arcdini only supports encryption when creating ZIP archives.");
         NativeStatus.CheckPlatform();

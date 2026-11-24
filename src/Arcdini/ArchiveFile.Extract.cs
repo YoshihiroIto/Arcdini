@@ -100,7 +100,7 @@ public sealed partial class ArchiveFile
                 while (completed < maximumEntries && reader.MoveNext())
                 {
                     var entry = reader.Current!;
-                    if (selection is not null && !selection.Contains(entry.Id))
+                    if (selection is { } && !selection.Contains(entry.Id))
                     {
                         reader.Skip();
                         continue;
@@ -115,7 +115,7 @@ public sealed partial class ArchiveFile
 
                     var components = ArchivePaths.ValidateEntryPath(relativePath);
                     var output = components.Length is 0 ? root : Path.Join(root, Path.Join(components));
-                    if (linkPaths is not null && HasLinkAncestor(output, linkPaths))
+                    if (linkPaths is { } && HasLinkAncestor(output, linkPaths))
                     {
                         reader.Skip();
                     }
@@ -157,11 +157,11 @@ public sealed partial class ArchiveFile
                     cancellationToken.ThrowIfCancellationRequested();
                 }
 
-                if (selection is not null && completed != selection.Count)
+                if (selection is { } && completed != selection.Count)
                     throw new ArchiveException(ArchiveError.EntryNotFound,
                         "The archive ended before all selected entries were found.");
 
-                if (links is not null)
+                if (links is { })
                 {
                     foreach (var link in links)
                     {
@@ -219,7 +219,7 @@ public sealed partial class ArchiveFile
 
     private static bool HasLinkAncestor(string path, HashSet<string> linkPaths)
     {
-        for (var parent = Path.GetDirectoryName(path); parent is not null; parent = Path.GetDirectoryName(parent))
+        for (var parent = Path.GetDirectoryName(path); parent is { }; parent = Path.GetDirectoryName(parent))
         {
             if (linkPaths.Contains(parent))
                 return true;

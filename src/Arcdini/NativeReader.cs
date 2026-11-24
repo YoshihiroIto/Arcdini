@@ -36,7 +36,7 @@ internal sealed unsafe class NativeReader : IDisposable
             Check(Native.ReadXz(_handle), "Enable xz");
             Check(Native.ReadLzip(_handle), "Enable lzip");
             Check(Native.ReadZstd(_handle), "Enable Zstandard");
-            if (password is not null)
+            if (password is { })
                 Check(Native.ReadAddPassphrase(_handle, password), "Set passphrase");
             Check(Native.ReadSetSeek(_handle, &Seek), "Set the archive seek callback");
             Check(Native.ReadOpen(_handle, _handle.SetContext(_input), 0, &ReadInput, &SkipInput, 0), "Open archive");

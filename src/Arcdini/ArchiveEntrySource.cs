@@ -68,9 +68,9 @@ public sealed class ArchiveEntrySource
         return _openStream() ?? throw new InvalidOperationException("The entry stream factory returned null.");
     }
 
-    internal long GetSize(Stream? stream) => _filePath is not null ? stream!.Length : Size;
+    internal long GetSize(Stream? stream) => _filePath is { } ? stream!.Length : Size;
 
-    internal DateTimeOffset? GetLastWriteTime() => _filePath is not null
+    internal DateTimeOffset? GetLastWriteTime() => _filePath is { }
         ? new DateTimeOffset(File.GetLastWriteTimeUtc(_filePath))
         : LastWriteTime;
 }
